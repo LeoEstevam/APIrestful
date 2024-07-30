@@ -16,12 +16,14 @@ def get_users():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, name, email FROM users;')
+    cursor.execute('SELECT * FROM users;')
     users = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    users_list = [{'id': user[0], 'name': user[1], 'email': user[2]} for user in users]
+    print(users)
+
+    users_list = [{'id': user[0], 'username': user[1], 'email': user[2]} for user in users]
     return jsonify(users_list)
 
 @app.route('/users/<int:user_id>', methods=['GET']) #Rota para obter um usuário específico por ID.
@@ -29,7 +31,7 @@ def get_user(user_id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, name, email FROM users WHERE id = %s', (user_id,))
+    cursor.execute('SELECT id, username, email FROM users WHERE id = %s', (user_id,))
     user = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -37,45 +39,45 @@ def get_user(user_id):
     if user is None:
         abort(404, description='User not found')
     
-    user_data = {'id': user[0], 'name': user[1], 'email': user[2]}
+    user_data = {'id': user[0], 'username': user[1], 'email': user[2]}
     return jsonify(user_data)
 
 @app.route('/users', methods=['POST'])
 def create_user():
     
-    if not request.json or not all(k in request.json for k in ['name', 'email']):
+    if not request.json or not all(k in request.json for k in ['username', 'email']):
         abort(400, description='Invalid input')
 
-    new_name = request.json['name']
+    new_username = request.json['username']
     new_email = request.json['email']
 
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        'INSERT INTO users (name, email) VALUES (%s, %s) RETURNING id',
-        (new_name, new_email)
+        'INSERT INTO users (username, email) VALUES (%s, %s) RETURNING id',
+        (new_username, new_email)
     )
     new_id = cursor.fetchone()[0]
     conn.commit()
     cursor.close()
     conn.close()
 
-    return jsonify({'id': new_id, 'name': new_name, 'email': new_email}), 201
+    return jsonify({'id': new_id, 'username': new_username, 'email': new_email}), 201
 
 @app.route('/users/<int:user_id>', methods=['PUT']) #Rota para atualizar um usuário existente
 def update_user(user_id):
 
-    if not request.json or not any(k in request.json for k in ['name', 'email']):
+    if not request.json or not any(k in request.json for k in ['username', 'email']):
         abort(400, description='Invalid input')
 
-    new_name = request.json.get('name')
+    new_username = request.json.get('username')
     new_email = request.json.get('email')
 
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        'UPDATE users SET name = %s, email = %s WHERE id = %s',
-        (new_name, new_email, user_id)
+        'UPDATE users SET username = %s, email = %s WHERE id = %s',
+        (new_username, new_email, user_id)
     )
     conn.commit()
     cursor.close()
@@ -84,7 +86,7 @@ def update_user(user_id):
     if cursor.rowcount == 0:
         abort(404, description='User not found')
     
-    return jsonify({'id': user_id, 'name': new_name, 'email': new_email})
+    return jsonify({'id': user_id, 'username': new_username, 'email': new_email})
 
 @app.route('/users/<int:user_id>', methods=['DELETE']) #Rota usada para deletar um usuário por ID.
 def delete_user(user_id):
